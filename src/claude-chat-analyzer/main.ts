@@ -122,10 +122,66 @@ function processInput(text: string) {
 
 function parseMarkdown(text: string): ParsedMessage[] {
   const result: ParsedMessage[] = []
+  const lines = text.split('\n')
 
-  // Try multiple patterns for Claude Code export formats
+  // Pattern 1: Claude Code /export format
+  // Human messages: "> message"
+  // Assistant messages: "⏺ message"
+  // Tool results: "⎿ result" (part of assistant)
+  let currentRole: 'human' | 'assistant' | null = null
+  let currentContent: string[] = []
 
-  // Pattern 1: "### Human" / "### Assistant" or "## Human" headers
+  for (const line of lines) {
+    // Human message starts with "> " (but not ">>" which is nested quotes)
+    if (line.match(/^> [^>]/)) {
+      // Save previous message
+      if (currentRole && currentContent.length > 0) {
+        const cleanContent = cleanMarkdownContent(currentContent.join('\n'))
+        if (cleanContent) {
+          result.push({ sender: currentRole, text: cleanContent, timestamp: '' })
+        }
+      }
+      currentRole = 'human'
+      currentContent = [line.slice(2)] // Remove "> " prefix
+    }
+    // Assistant message starts with "⏺ "
+    else if (line.startsWith('⏺ ') || line === '⏺') {
+      // Save previous message
+      if (currentRole && currentContent.length > 0) {
+        const cleanContent = cleanMarkdownContent(currentContent.join('\n'))
+        if (cleanContent) {
+          result.push({ sender: currentRole, text: cleanContent, timestamp: '' })
+        }
+      }
+      currentRole = 'assistant'
+      currentContent = [line.slice(2)] // Remove "⏺ " prefix
+    }
+    // Tool result lines (⎿) are part of assistant context - skip them
+    else if (line.startsWith('  ⎿')) {
+      // Skip tool results - they're internal
+      continue
+    }
+    // Continuation of current message
+    else if (currentRole) {
+      // Skip header/decoration lines
+      if (line.match(/^[╭╰│├┼╮╯─]+/) || line.match(/^\s*\*\s*[▐▛▜▝█▘]+/)) {
+        continue
+      }
+      currentContent.push(line)
+    }
+  }
+
+  // Save last message
+  if (currentRole && currentContent.length > 0) {
+    const cleanContent = cleanMarkdownContent(currentContent.join('\n'))
+    if (cleanContent) {
+      result.push({ sender: currentRole, text: cleanContent, timestamp: '' })
+    }
+  }
+
+  if (result.length > 0) return result
+
+  // Pattern 2: "### Human" / "### Assistant" or "## Human" headers
   let headerPattern = /^#{2,3}\s+(Human|Assistant|User)\s*$/gim
   let parts = text.split(headerPattern)
 
@@ -146,11 +202,9 @@ function parseMarkdown(text: string): ParsedMessage[] {
     if (result.length > 0) return result
   }
 
-  // Pattern 2: "> **Human**:" / "> **Assistant**:" quote format
-  const quotePattern = /^>\s*\*\*(Human|Assistant|User|Claude)\*\*:\s*/gim
-  const lines = text.split('\n')
-  let currentRole: 'human' | 'assistant' | null = null
-  let currentContent: string[] = []
+  // Pattern 3: "> **Human**:" / "> **Assistant**:" quote format
+  currentRole = null
+  currentContent = []
 
   for (const line of lines) {
     const match = line.match(/^>\s*\*\*(Human|Assistant|User|Claude)\*\*:\s*(.*)/i)
@@ -183,7 +237,7 @@ function parseMarkdown(text: string): ParsedMessage[] {
 
   if (result.length > 0) return result
 
-  // Pattern 3: Simple "Human:" / "Assistant:" on own line
+  // Pattern 4: Simple "Human:" / "Assistant:" on own line
   const simplePattern = /^(Human|Assistant|User|Claude):\s*$/gim
   parts = text.split(simplePattern)
 
@@ -224,6 +278,17 @@ function cleanMarkdownContent(text: string): string {
 
   // Remove system-reminder blocks
   cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+
+  // Remove Claude Code tool calls (lines that are just tool invocations)
+  // Patterns like: Search(...), Bash(...), Read(...), Write(...), filesystem - ...(MCP)
+  const toolPatterns = [
+    /^(Search|Bash|Read|Write|Update|Fetch|Edit|Glob|Grep|Task|TodoWrite|WebFetch|WebSearch|LSP|NotebookEdit)\(.*\)$/gm,
+    /^filesystem - \w+ \(MCP\)\(.*\)$/gm,
+    /^mcp__\w+__\w+\(.*\)$/gm,
+  ]
+  for (const pattern of toolPatterns) {
+    cleaned = cleaned.replace(pattern, '')
+  }
 
   // Collapse multiple newlines
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n')

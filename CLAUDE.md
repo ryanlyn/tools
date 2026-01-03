@@ -225,6 +225,48 @@ function showStatus(message, type = 'info') {
 }
 ```
 
+## TypeScript Tools (Build Required)
+
+For complex tools that benefit from TypeScript (type safety, complex state), use the hybrid approach:
+
+### Structure
+
+```
+src/
+└── tool-name/
+    ├── tool-name.html    # Entry point (name determines output filename)
+    ├── main.ts           # App logic
+    ├── types.ts          # Type definitions
+    └── styles.css        # Styles (inlined at build)
+```
+
+### Development
+
+```bash
+# Install dependencies (first time only)
+npm install
+
+# Dev server with hot reload
+npm run dev
+
+# Build to single-file HTML in repo root
+npm run build
+```
+
+### Output
+
+The build produces a single `.html` file in the repo root with all JS/CSS inlined - same as manually-written tools, but with TypeScript benefits during development.
+
+### When to Use TypeScript
+
+Use TypeScript for tools with:
+- Complex JSON parsing (API responses, file formats)
+- Multiple interacting components
+- State management
+- Type-safe API calls
+
+Stick with vanilla JS for simple tools - faster to create, easier for LLMs to generate.
+
 ## CORS-Friendly APIs
 
 These APIs work directly from the browser:

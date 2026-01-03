@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Chat Analyzer</title>
+  <script type="module" crossorigin>(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const s of document.querySelectorAll('link[rel="modulepreload"]'))o(s);new MutationObserver(s=>{for(const r of s)if(r.type==="childList")for(const p of r.addedNodes)p.tagName==="LINK"&&p.rel==="modulepreload"&&o(p)}).observe(document,{childList:!0,subtree:!0});function t(s){const r={};return s.integrity&&(r.integrity=s.integrity),s.referrerPolicy&&(r.referrerPolicy=s.referrerPolicy),s.crossOrigin==="use-credentials"?r.credentials="include":s.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function o(s){if(s.ep)return;s.ep=!0;const r=t(s);fetch(s.href,r)}})();const a=document.getElementById("drop-zone"),d=document.getElementById("file-input"),l=document.getElementById("username"),g=document.getElementById("copy-btn"),v=document.getElementById("clear-btn"),u=document.getElementById("preview"),m=document.getElementById("stats"),f=document.getElementById("status");let c=[];const y="claude-chat-analyzer-username";function b(){const n=localStorage.getItem(y);n&&(l.value=n),l.addEventListener("input",()=>{localStorage.setItem(y,l.value),c.length>0&&E()}),a.addEventListener("click",()=>d.click()),a.addEventListener("dragover",e=>{e.preventDefault(),a.classList.add("dragover")}),a.addEventListener("dragleave",()=>{a.classList.remove("dragover")}),a.addEventListener("drop",e=>{var o;e.preventDefault(),a.classList.remove("dragover");const t=(o=e.dataTransfer)==null?void 0:o.files;t!=null&&t.length&&h(t[0])}),d.addEventListener("change",()=>{var e;(e=d.files)!=null&&e.length&&h(d.files[0])}),g.addEventListener("click",w),v.addEventListener("click",S)}async function h(n){if(!n.name.endsWith(".json")){i("Please select a JSON file","error");return}try{const e=await n.text(),t=JSON.parse(e);if(!t.chat_messages||!Array.isArray(t.chat_messages)){i("Invalid Claude export format","error");return}c=x(t.chat_messages),E(),I(t),g.disabled=!1,v.disabled=!1,i(`Loaded ${c.length} messages`,"success")}catch(e){i(`Error parsing file: ${e instanceof Error?e.message:"Unknown error"}`,"error")}}function x(n){const e=[];for(const t of n){const o=[];for(const r of t.content)r.type==="text"&&r.text&&o.push(r.text);t.text&&o.push(t.text);const s=o.join(`
+`).trim();s&&e.push({sender:t.sender,text:s,timestamp:t.created_at})}return e}function L(n){return n==="human"?l.value.trim()||"User":"Claude"}function E(){const n=c.map(e=>{const t=L(e.sender),o=B(e.text);return`<blockquote class="${e.sender}"><strong>${t}:</strong> ${o}</blockquote>`}).join(`
+`);u.innerHTML=n,u.classList.add("visible")}function I(n){const e=c.length,t=new Date(n.created_at).toLocaleDateString(),o=new Date(n.updated_at).toLocaleDateString();m.innerHTML=`
+    <strong>${e}</strong> messages |
+    Created: ${t} |
+    Updated: ${o}
+  `,m.classList.add("visible")}async function w(){const n=c.map(e=>`> **${L(e.sender)}**: ${e.text}`).join(`
+
+`);try{await navigator.clipboard.writeText(n),i("Copied to clipboard!","success")}catch{i("Failed to copy to clipboard","error")}}function S(){c=[],u.innerHTML="",u.classList.remove("visible"),m.innerHTML="",m.classList.remove("visible"),g.disabled=!0,v.disabled=!0,d.value="",$()}function i(n,e){f.textContent=n,f.className=`status ${e}`}function $(){f.className="status",f.textContent=""}function B(n){const e=document.createElement("div");return e.textContent=n,e.innerHTML.replace(/\n/g,"<br>")}b();</script>
+  <style rel="stylesheet" crossorigin>*{box-sizing:border-box}body{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;max-width:900px;margin:0 auto;padding:20px;line-height:1.6;color:#333}h1{margin-bottom:5px}.subtitle{color:#666;margin-top:0;margin-bottom:25px}.settings{display:flex;gap:15px;align-items:center;margin-bottom:20px;flex-wrap:wrap}.settings label{font-weight:500}.settings input[type=text]{padding:8px 12px;font-size:14px;border:1px solid #ccc;border-radius:5px;width:150px}.drop-zone{border:2px dashed #ccc;border-radius:8px;padding:40px;text-align:center;color:#666;cursor:pointer;transition:all .2s;margin-bottom:20px}.drop-zone:hover,.drop-zone.dragover{border-color:#06c;background:#f0f7ff}.drop-zone p{margin:0}.drop-zone input[type=file]{display:none}.actions{display:flex;gap:10px;margin-bottom:20px}button{padding:10px 20px;font-size:14px;border:1px solid #ccc;border-radius:5px;cursor:pointer;background:#06c;color:#fff;border-color:#06c}button:hover{background:#05a}button:disabled{background:#999;border-color:#999;cursor:not-allowed}button.secondary{background:#666;border-color:#666}button.secondary:hover{background:#555}.status{padding:10px 15px;border-radius:5px;margin-bottom:15px;display:none}.status.info{background:#e6f3ff;border:1px solid #b3d9ff;color:#05a;display:block}.status.success{background:#e6ffe6;border:1px solid #b3ffb3;color:#070;display:block}.status.error{background:#fff0f0;border:1px solid #ffcccc;color:#c00;display:block}.preview{background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:20px;max-height:500px;overflow-y:auto;margin-bottom:20px;display:none}.preview.visible{display:block}.preview blockquote{margin:0 0 15px;padding:10px 15px;border-left:4px solid #ddd;background:#fff}.preview blockquote strong{color:#333}.preview blockquote.human{border-left-color:#06c}.preview blockquote.assistant{border-left-color:#0a6}.stats{color:#666;font-size:.9em;padding:10px 0;border-top:1px solid #eee;display:none}.stats.visible{display:block}footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#666;font-size:.85em}footer a{color:#06c}</style>
+</head>
+<body>
+  <h1>Claude Chat Analyzer</h1>
+  <p class="subtitle">Convert Claude conversation exports to clean markdown</p>
+
+  <div id="status" class="status"></div>
+
+  <div class="settings">
+    <label for="username">Your name:</label>
+    <input type="text" id="username" placeholder="User" />
+  </div>
+
+  <div class="drop-zone" id="drop-zone">
+    <p>Drop Claude export JSON here, or click to select</p>
+    <input type="file" id="file-input" accept=".json" />
+  </div>
+
+  <div class="actions">
+    <button id="copy-btn" disabled>Copy as Markdown</button>
+    <button id="clear-btn" class="secondary" disabled>Clear</button>
+  </div>
+
+  <div class="preview" id="preview"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <footer>
+    <p><a href="index.html">← Back to tools</a></p>
+  </footer>
+
+</body>
+</html>

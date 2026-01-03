@@ -6,16 +6,21 @@ Inspired by [Simon Willison's HTML tools](https://simonwillison.net/2025/Dec/10/
 
 ## Architecture
 
-Each tool is a self-contained `.html` file with inline CSS and JavaScript. No build steps, no frameworks, no npm.
+Each tool is a self-contained `.html` file with inline CSS and JavaScript.
 
-- **Single-file design**: Copy-paste friendly, easy to modify
-- **Vanilla JavaScript**: No React or complex frameworks
-- **CDN dependencies**: External libraries loaded from jsDelivr/cdnjs
-- **Zero build step**: Push to deploy
+**Simple tools** (vanilla JS):
+- Write HTML directly, no build step
+- Copy-paste friendly, easy to modify
+
+**Complex tools** (TypeScript):
+- Source in `src/tool-name/`
+- Vite builds to single-file HTML
+- Same output format, better DX for complex logic
 
 ## Tools
 
 - **[api-playground](api-playground.html)** - Test LLM APIs (Claude, GPT) directly from your browser
+- **[claude-chat-analyzer](claude-chat-analyzer.html)** - Convert Claude exports to clean markdown quotes
 
 ## Creating New Tools
 

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Chat Analyzer</title>
+</head>
+<body>
+  <h1>Claude Chat Analyzer</h1>
+  <p class="subtitle">Convert Claude conversation exports to clean markdown</p>
+
+  <div id="status" class="status"></div>
+
+  <div class="settings">
+    <label for="username">Your name:</label>
+    <input type="text" id="username" placeholder="User" />
+  </div>
+
+  <div class="drop-zone" id="drop-zone">
+    <p>Drop Claude export JSON here, or click to select</p>
+    <input type="file" id="file-input" accept=".json" />
+  </div>
+
+  <div class="actions">
+    <button id="copy-btn" disabled>Copy as Markdown</button>
+    <button id="clear-btn" class="secondary" disabled>Clear</button>
+  </div>
+
+  <div class="preview" id="preview"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <footer>
+    <p><a href="index.html">← Back to tools</a></p>
+  </footer>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

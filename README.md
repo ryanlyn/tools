@@ -15,18 +15,18 @@ Each tool is a self-contained `.html` file with inline CSS and JavaScript. No bu
 
 ## Tools
 
-- **[api-playground](tools/api-playground.html)** - Test LLM APIs (Claude, GPT) directly from your browser
+- **[api-playground](api-playground.html)** - Test LLM APIs (Claude, GPT) directly from your browser
 
 ## Creating New Tools
 
-Add new `.html` files to the `tools/` directory. See [CLAUDE.md](CLAUDE.md) for patterns and best practices.
+See [CLAUDE.md](CLAUDE.md) for patterns and best practices when creating tools with LLM assistance.
 
 ## Hosting
 
-Deployed via GitHub Pages from the `tools/` folder:
+Deployed via GitHub Pages. After enabling Pages in repo settings:
 
 1. Go to Settings → Pages
 2. Source: Deploy from branch
-3. Branch: `main`, folder: `/tools`
+3. Branch: `main`, folder: `/` (root)
 
 Live at: `https://<username>.github.io/tools/`

@@ -108,7 +108,7 @@
 
         if (hostname.endsWith('.github.io')) {
           const username = hostname.replace('.github.io', '')
-          apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents`
+          apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/tools`
 
           // Update repo link
           document.getElementById('repo-link').href = `https://github.com/${username}/${repoName}`

@@ -41,6 +41,35 @@ h1 {
   width: 150px;
 }
 
+.input-methods {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.or-divider {
+  color: #999;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.paste-btn {
+  padding: 15px 25px;
+  font-size: 14px;
+  background: #00aa66;
+  border: 1px solid #00aa66;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.paste-btn:hover {
+  background: #009955;
+}
+
 .drop-zone {
   border: 2px dashed #ccc;
   border-radius: 8px;
@@ -49,7 +78,8 @@ h1 {
   color: #666;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 20px;
+  flex: 1;
+  min-width: 200px;
 }
 
 .drop-zone:hover,

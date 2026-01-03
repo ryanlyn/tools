@@ -4,6 +4,7 @@ import type { ClaudeExport, ChatMessage, ParsedMessage } from './types'
 // DOM elements
 const dropZone = document.getElementById('drop-zone') as HTMLDivElement
 const fileInput = document.getElementById('file-input') as HTMLInputElement
+const pasteBtn = document.getElementById('paste-btn') as HTMLButtonElement
 const usernameInput = document.getElementById('username') as HTMLInputElement
 const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement
@@ -61,6 +62,7 @@ function init() {
   })
 
   // Button handlers
+  pasteBtn.addEventListener('click', pasteFromClipboard)
   copyBtn.addEventListener('click', copyAsMarkdown)
   clearBtn.addEventListener('click', clearAll)
 }
@@ -72,8 +74,27 @@ async function handleFile(file: File) {
     return
   }
 
+  const text = await file.text()
+  processJson(text)
+}
+
+// Paste from clipboard
+async function pasteFromClipboard() {
   try {
-    const text = await file.text()
+    const text = await navigator.clipboard.readText()
+    if (!text.trim()) {
+      showStatus('Clipboard is empty', 'error')
+      return
+    }
+    processJson(text)
+  } catch (err) {
+    showStatus('Failed to read clipboard. Make sure you have copied JSON data.', 'error')
+  }
+}
+
+// Process JSON text
+function processJson(text: string) {
+  try {
     const data = JSON.parse(text) as ClaudeExport
 
     if (!data.chat_messages || !Array.isArray(data.chat_messages)) {
@@ -90,7 +111,7 @@ async function handleFile(file: File) {
     showStatus(`Loaded ${parsedMessages.length} messages`, 'success')
 
   } catch (err) {
-    showStatus(`Error parsing file: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
+    showStatus(`Error parsing JSON: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
   }
 }
 

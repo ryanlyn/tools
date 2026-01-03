@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:simonwillison.net)",
+      "mcp__deepwiki__read_wiki_contents",
+      "mcp__filesystem__list_directory",
+      "WebFetch(domain:github.com)",
+      "mcp__filesystem__directory_tree",
+      "Bash(git ls-tree:*)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "Bash(open:*)",
+      "Bash(npx html-validate:*)",
+      "Bash(tidy:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git revert:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(git checkout:*)"
+    ]
+  }
+}

@@ -20,7 +20,7 @@ Each tool is a self-contained `.html` file with inline CSS and JavaScript.
 ## Tools
 
 - **[api-playground](api-playground.html)** - Test LLM APIs (Claude, GPT) directly from your browser
-- **[claude-chat-analyzer](claude-chat-analyzer.html)** - Convert Claude exports to clean markdown quotes
+- **[claude-chat-analyzer](claude-chat-analyzer.html)** - Convert Claude Code session exports to clean markdown quotes
 
 ## Creating New Tools
 

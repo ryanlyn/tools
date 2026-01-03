@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude Chat Analyzer</title>
+  <title>Claude Code Session Analyzer</title>
 </head>
 <body>
-  <h1>Claude Chat Analyzer</h1>
-  <p class="subtitle">Convert Claude conversation exports to clean markdown</p>
+  <h1>Claude Code Session Analyzer</h1>
+  <p class="subtitle">Convert Claude Code session exports to clean markdown</p>
 
   <div id="status" class="status"></div>
 
@@ -16,9 +16,13 @@
     <input type="text" id="username" placeholder="User" />
   </div>
 
-  <div class="drop-zone" id="drop-zone">
-    <p>Drop Claude export JSON here, or click to select</p>
-    <input type="file" id="file-input" accept=".json" />
+  <div class="input-methods">
+    <div class="drop-zone" id="drop-zone">
+      <p>Drop Claude export JSON here, or click to select</p>
+      <input type="file" id="file-input" accept=".json" />
+    </div>
+    <div class="or-divider">or</div>
+    <button id="paste-btn" class="paste-btn">Paste from Clipboard</button>
   </div>
 
   <div class="actions">

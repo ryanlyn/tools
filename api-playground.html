@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Playground</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-top: 0;
+      margin-bottom: 25px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    select, button {
+      padding: 8px 16px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    select {
+      background: white;
+    }
+
+    button {
+      background: #0066cc;
+      color: white;
+      border-color: #0066cc;
+    }
+
+    button:hover {
+      background: #0055aa;
+    }
+
+    button:disabled {
+      background: #999;
+      border-color: #999;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #666;
+      border-color: #666;
+    }
+
+    button.secondary:hover {
+      background: #555;
+    }
+
+    button.danger {
+      background: #cc3300;
+      border-color: #cc3300;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #0066cc;
+    }
+
+    #prompt {
+      min-height: 120px;
+    }
+
+    #response {
+      min-height: 200px;
+      background: #f9f9f9;
+      font-family: 'SF Mono', Consolas, monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .status {
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .status.info {
+      background: #e6f3ff;
+      border: 1px solid #b3d9ff;
+      color: #0055aa;
+    }
+
+    .status.success {
+      background: #e6ffe6;
+      border: 1px solid #b3ffb3;
+      color: #007700;
+    }
+
+    .status.error {
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      color: #cc0000;
+    }
+
+    .key-status {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .key-status .set {
+      color: #007700;
+    }
+
+    .key-status .not-set {
+      color: #cc6600;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-size: 0.85em;
+    }
+
+    footer a {
+      color: #0066cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>API Playground</h1>
+  <p class="subtitle">Test LLM APIs directly from your browser. API keys stored in localStorage.</p>
+
+  <div id="status" class="status"></div>
+
+  <div class="key-status" id="key-status"></div>
+
+  <div class="controls">
+    <select id="provider">
+      <option value="anthropic">Anthropic (Claude)</option>
+      <option value="openai">OpenAI (GPT)</option>
+    </select>
+    <select id="model">
+      <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+      <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+    </select>
+    <button id="set-key">Set API Key</button>
+    <button id="clear-key" class="danger">Clear Key</button>
+  </div>
+
+  <div class="field">
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
+  </div>
+
+  <div class="actions">
+    <button id="send">Send</button>
+    <button id="copy" class="secondary">Copy Response</button>
+    <button id="clear" class="secondary">Clear</button>
+  </div>
+
+  <div class="field" style="margin-top: 20px;">
+    <label for="response">Response</label>
+    <textarea id="response" readonly placeholder="Response will appear here..."></textarea>
+  </div>
+
+  <footer>
+    <p>
+      <strong>Privacy:</strong> API keys are stored only in your browser's localStorage.
+      They are never sent anywhere except directly to the API provider.
+    </p>
+    <p>
+      <a href="index.html">← Back to tools</a>
+    </p>
+  </footer>
+
+  <script>
+    // Elements
+    const providerSelect = document.getElementById('provider')
+    const modelSelect = document.getElementById('model')
+    const promptInput = document.getElementById('prompt')
+    const responseOutput = document.getElementById('response')
+    const sendBtn = document.getElementById('send')
+    const copyBtn = document.getElementById('copy')
+    const clearBtn = document.getElementById('clear')
+    const setKeyBtn = document.getElementById('set-key')
+    const clearKeyBtn = document.getElementById('clear-key')
+    const statusDiv = document.getElementById('status')
+    const keyStatusDiv = document.getElementById('key-status')
+
+    // Models by provider
+    const models = {
+      anthropic: [
+        { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+        { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
+      ],
+      openai: [
+        { value: 'gpt-4o', label: 'GPT-4o' },
+        { value: 'gpt-4o-mini', label: 'GPT-4o Mini' }
+      ]
+    }
+
+    // API key helpers
+    function getKeyName(provider) {
+      return provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY'
+    }
+
+    function getApiKey(provider) {
+      return localStorage.getItem(getKeyName(provider))
+    }
+
+    function setApiKey(provider, key) {
+      localStorage.setItem(getKeyName(provider), key)
+    }
+
+    function clearApiKey(provider) {
+      localStorage.removeItem(getKeyName(provider))
+    }
+
+    // UI helpers
+    function showStatus(message, type = 'info') {
+      statusDiv.textContent = message
+      statusDiv.className = `status ${type}`
+      statusDiv.style.display = 'block'
+    }
+
+    function hideStatus() {
+      statusDiv.style.display = 'none'
+    }
+
+    function updateKeyStatus() {
+      const provider = providerSelect.value
+      const key = getApiKey(provider)
+      const keyName = getKeyName(provider)
+
+      if (key) {
+        keyStatusDiv.innerHTML = `<span class="set">✓ ${keyName} is set</span>`
+      } else {
+        keyStatusDiv.innerHTML = `<span class="not-set">⚠ ${keyName} not set</span>`
+      }
+    }
+
+    function updateModels() {
+      const provider = providerSelect.value
+      modelSelect.innerHTML = models[provider]
+        .map(m => `<option value="${m.value}">${m.label}</option>`)
+        .join('')
+    }
+
+    // Auto-save prompt
+    function savePrompt() {
+      localStorage.setItem('api-playground-prompt', promptInput.value)
+    }
+
+    function loadPrompt() {
+      const saved = localStorage.getItem('api-playground-prompt')
+      if (saved) promptInput.value = saved
+    }
+
+    // API calls
+    async function callAnthropic(prompt, model) {
+      const apiKey = getApiKey('anthropic')
+      if (!apiKey) throw new Error('Anthropic API key not set')
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || `API error: ${response.status}`)
+      }
+
+      return data.content[0].text
+    }
+
+    async function callOpenAI(prompt, model) {
+      const apiKey = getApiKey('openai')
+      if (!apiKey) throw new Error('OpenAI API key not set')
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || `API error: ${response.status}`)
+      }
+
+      return data.choices[0].message.content
+    }
+
+    async function sendMessage() {
+      const provider = providerSelect.value
+      const model = modelSelect.value
+      const prompt = promptInput.value.trim()
+
+      if (!prompt) {
+        showStatus('Please enter a prompt', 'error')
+        return
+      }
+
+      if (!getApiKey(provider)) {
+        showStatus(`Please set your ${getKeyName(provider)} first`, 'error')
+        return
+      }
+
+      sendBtn.disabled = true
+      showStatus('Sending...', 'info')
+      responseOutput.value = ''
+
+      try {
+        const result = provider === 'anthropic'
+          ? await callAnthropic(prompt, model)
+          : await callOpenAI(prompt, model)
+
+        responseOutput.value = result
+        showStatus('Done!', 'success')
+        setTimeout(hideStatus, 2000)
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error')
+      } finally {
+        sendBtn.disabled = false
+      }
+    }
+
+    // Event listeners
+    providerSelect.addEventListener('change', () => {
+      updateModels()
+      updateKeyStatus()
+    })
+
+    sendBtn.addEventListener('click', sendMessage)
+
+    copyBtn.addEventListener('click', async () => {
+      if (responseOutput.value) {
+        await navigator.clipboard.writeText(responseOutput.value)
+        showStatus('Copied to clipboard!', 'success')
+        setTimeout(hideStatus, 2000)
+      }
+    })
+
+    clearBtn.addEventListener('click', () => {
+      promptInput.value = ''
+      responseOutput.value = ''
+      savePrompt()
+      hideStatus()
+    })
+
+    setKeyBtn.addEventListener('click', () => {
+      const provider = providerSelect.value
+      const keyName = getKeyName(provider)
+      const key = prompt(`Enter your ${keyName}:`)
+      if (key) {
+        setApiKey(provider, key)
+        updateKeyStatus()
+        showStatus('API key saved!', 'success')
+        setTimeout(hideStatus, 2000)
+      }
+    })
+
+    clearKeyBtn.addEventListener('click', () => {
+      const provider = providerSelect.value
+      const keyName = getKeyName(provider)
+      if (confirm(`Clear ${keyName} from localStorage?`)) {
+        clearApiKey(provider)
+        updateKeyStatus()
+        showStatus('API key cleared', 'info')
+        setTimeout(hideStatus, 2000)
+      }
+    })
+
+    promptInput.addEventListener('input', savePrompt)
+
+    // Keyboard shortcut: Cmd/Ctrl + Enter to send
+    promptInput.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        sendMessage()
+      }
+    })
+
+    // Initialize
+    updateModels()
+    updateKeyStatus()
+    loadPrompt()
+  </script>
+</body>
+</html>

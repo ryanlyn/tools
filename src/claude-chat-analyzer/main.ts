@@ -355,7 +355,7 @@ function renderPreview() {
       const index = parseInt((e.target as HTMLButtonElement).dataset.index || '0')
       const msg = parsedMessages[index]
       const name = getSenderName(msg.sender)
-      const markdown = `> **${name}**: ${msg.text}`
+      const markdown = formatAsBlockquote(name, msg.text)
       try {
         await navigator.clipboard.writeText(markdown)
         const originalText = (e.target as HTMLButtonElement).textContent
@@ -389,10 +389,17 @@ function renderStatsFromMessages() {
   stats.classList.add('visible')
 }
 
+function formatAsBlockquote(name: string, text: string): string {
+  const lines = text.split('\n')
+  return lines.map((line, i) =>
+    i === 0 ? `> **${name}**: ${line}` : `> ${line}`
+  ).join('\n')
+}
+
 async function copyAsMarkdown() {
   const markdown = parsedMessages.map(msg => {
     const name = getSenderName(msg.sender)
-    return `> **${name}**: ${msg.text}`
+    return formatAsBlockquote(name, msg.text)
   }).join('\n\n')
 
   try {

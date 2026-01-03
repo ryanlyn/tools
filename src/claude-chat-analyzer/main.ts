@@ -123,24 +123,83 @@ function processInput(text: string) {
 function parseMarkdown(text: string): ParsedMessage[] {
   const result: ParsedMessage[] = []
 
-  // Claude Code export uses "### Human" and "### Assistant" headers
-  const headerPattern = /^#{2,3}\s+(Human|Assistant|User)\s*$/gim
-  const parts = text.split(headerPattern)
+  // Try multiple patterns for Claude Code export formats
 
-  for (let i = 1; i < parts.length; i += 2) {
-    const role = parts[i]?.toLowerCase()
-    const content = parts[i + 1]?.trim()
+  // Pattern 1: "### Human" / "### Assistant" or "## Human" headers
+  let headerPattern = /^#{2,3}\s+(Human|Assistant|User)\s*$/gim
+  let parts = text.split(headerPattern)
 
-    if (!content) continue
+  if (parts.length > 2) {
+    for (let i = 1; i < parts.length; i += 2) {
+      const role = parts[i]?.toLowerCase()
+      const content = parts[i + 1]?.trim()
+      if (!content) continue
+      const cleanContent = cleanMarkdownContent(content)
+      if (cleanContent) {
+        result.push({
+          sender: (role === 'human' || role === 'user') ? 'human' : 'assistant',
+          text: cleanContent,
+          timestamp: ''
+        })
+      }
+    }
+    if (result.length > 0) return result
+  }
 
-    const cleanContent = cleanMarkdownContent(content)
+  // Pattern 2: "> **Human**:" / "> **Assistant**:" quote format
+  const quotePattern = /^>\s*\*\*(Human|Assistant|User|Claude)\*\*:\s*/gim
+  const lines = text.split('\n')
+  let currentRole: 'human' | 'assistant' | null = null
+  let currentContent: string[] = []
 
+  for (const line of lines) {
+    const match = line.match(/^>\s*\*\*(Human|Assistant|User|Claude)\*\*:\s*(.*)/i)
+    if (match) {
+      // Save previous message
+      if (currentRole && currentContent.length > 0) {
+        const cleanContent = cleanMarkdownContent(currentContent.join('\n'))
+        if (cleanContent) {
+          result.push({ sender: currentRole, text: cleanContent, timestamp: '' })
+        }
+      }
+      // Start new message
+      const role = match[1].toLowerCase()
+      currentRole = (role === 'human' || role === 'user') ? 'human' : 'assistant'
+      currentContent = match[2] ? [match[2]] : []
+    } else if (currentRole) {
+      // Continue current message (strip leading > if present)
+      const content = line.replace(/^>\s?/, '')
+      currentContent.push(content)
+    }
+  }
+
+  // Save last message
+  if (currentRole && currentContent.length > 0) {
+    const cleanContent = cleanMarkdownContent(currentContent.join('\n'))
     if (cleanContent) {
-      result.push({
-        sender: (role === 'human' || role === 'user') ? 'human' : 'assistant',
-        text: cleanContent,
-        timestamp: ''
-      })
+      result.push({ sender: currentRole, text: cleanContent, timestamp: '' })
+    }
+  }
+
+  if (result.length > 0) return result
+
+  // Pattern 3: Simple "Human:" / "Assistant:" on own line
+  const simplePattern = /^(Human|Assistant|User|Claude):\s*$/gim
+  parts = text.split(simplePattern)
+
+  if (parts.length > 2) {
+    for (let i = 1; i < parts.length; i += 2) {
+      const role = parts[i]?.toLowerCase()
+      const content = parts[i + 1]?.trim()
+      if (!content) continue
+      const cleanContent = cleanMarkdownContent(content)
+      if (cleanContent) {
+        result.push({
+          sender: (role === 'human' || role === 'user') ? 'human' : 'assistant',
+          text: cleanContent,
+          timestamp: ''
+        })
+      }
     }
   }
 

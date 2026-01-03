@@ -334,14 +334,40 @@ function getSenderName(sender: 'human' | 'assistant'): string {
 }
 
 function renderPreview() {
-  const html = parsedMessages.map(msg => {
+  const html = parsedMessages.map((msg, index) => {
     const name = getSenderName(msg.sender)
-    const escapedText = escapeHtml(msg.text)
-    return `<blockquote class="${msg.sender}"><strong>${name}:</strong> ${escapedText}</blockquote>`
+    const formattedText = formatMessageText(msg.text)
+    return `<blockquote class="${msg.sender}">
+      <div class="message-header">
+        <strong>${name}:</strong>
+        <button class="copy-msg-btn" data-index="${index}" title="Copy this message">📋</button>
+      </div>
+      <div class="message-content">${formattedText}</div>
+    </blockquote>`
   }).join('\n')
 
   preview.innerHTML = html
   preview.classList.add('visible')
+
+  // Add click handlers for per-message copy buttons
+  preview.querySelectorAll('.copy-msg-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const index = parseInt((e.target as HTMLButtonElement).dataset.index || '0')
+      const msg = parsedMessages[index]
+      const name = getSenderName(msg.sender)
+      const markdown = `> **${name}**: ${msg.text}`
+      try {
+        await navigator.clipboard.writeText(markdown)
+        const originalText = (e.target as HTMLButtonElement).textContent
+        ;(e.target as HTMLButtonElement).textContent = '✓'
+        setTimeout(() => {
+          (e.target as HTMLButtonElement).textContent = originalText
+        }, 1000)
+      } catch {
+        // Silently fail
+      }
+    })
+  })
 }
 
 function renderStats(data: ClaudeExport) {
@@ -402,7 +428,35 @@ function hideStatus() {
 function escapeHtml(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
-  return div.innerHTML.replace(/\n/g, '<br>')
+  return div.innerHTML
+}
+
+function formatMessageText(text: string): string {
+  // Split into code blocks and regular text
+  const parts: string[] = []
+  const codeBlockRegex = /```(\w*)\n?([\s\S]*?)```/g
+  let lastIndex = 0
+  let match
+
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      const beforeText = text.slice(lastIndex, match.index)
+      parts.push(escapeHtml(beforeText).replace(/\n/g, '<br>'))
+    }
+    // Add code block with preserved formatting
+    const lang = match[1] || ''
+    const code = escapeHtml(match[2])
+    parts.push(`<pre><code class="lang-${lang}">${code}</code></pre>`)
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text after last code block
+  if (lastIndex < text.length) {
+    parts.push(escapeHtml(text.slice(lastIndex)).replace(/\n/g, '<br>'))
+  }
+
+  return parts.join('')
 }
 
 init()

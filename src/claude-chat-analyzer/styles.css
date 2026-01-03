@@ -195,8 +195,50 @@ button.secondary:hover {
   background: white;
 }
 
+.preview blockquote .message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .preview blockquote strong {
   color: #333;
+}
+
+.preview blockquote .copy-msg-btn {
+  padding: 2px 6px;
+  font-size: 12px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #666;
+  min-width: 28px;
+}
+
+.preview blockquote .copy-msg-btn:hover {
+  background: #e0e0e0;
+}
+
+.preview blockquote .message-content {
+  line-height: 1.5;
+}
+
+.preview blockquote pre {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+
+.preview blockquote pre code {
+  font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  white-space: pre;
+  display: block;
 }
 
 .preview blockquote.human {

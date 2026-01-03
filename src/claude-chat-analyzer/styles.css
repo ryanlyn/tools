@@ -70,6 +70,19 @@ h1 {
   background: #009955;
 }
 
+.hint {
+  color: #888;
+  font-size: 0.85em;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.hint code {
+  background: #f0f0f0;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
 .drop-zone {
   border: 2px dashed #ccc;
   border-radius: 8px;

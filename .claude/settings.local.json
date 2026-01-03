@@ -20,7 +20,8 @@
       "Bash(npm install)",
       "Bash(npm run build:*)",
       "Bash(ls:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "mcp__filesystem__write_file"
     ]
   }
 }

@@ -20,13 +20,11 @@ const USERNAME_KEY = 'claude-chat-analyzer-username'
 
 // Initialize
 function init() {
-  // Restore username from localStorage
   const savedUsername = localStorage.getItem(USERNAME_KEY)
   if (savedUsername) {
     usernameInput.value = savedUsername
   }
 
-  // Save username on change
   usernameInput.addEventListener('input', () => {
     localStorage.setItem(USERNAME_KEY, usernameInput.value)
     if (parsedMessages.length > 0) {
@@ -34,7 +32,6 @@ function init() {
     }
   })
 
-  // File drop handling
   dropZone.addEventListener('click', () => fileInput.click())
 
   dropZone.addEventListener('dragover', (e) => {
@@ -61,24 +58,16 @@ function init() {
     }
   })
 
-  // Button handlers
   pasteBtn.addEventListener('click', pasteFromClipboard)
   copyBtn.addEventListener('click', copyAsMarkdown)
   clearBtn.addEventListener('click', clearAll)
 }
 
-// Handle file upload
 async function handleFile(file: File) {
-  if (!file.name.endsWith('.json')) {
-    showStatus('Please select a JSON file', 'error')
-    return
-  }
-
   const text = await file.text()
-  processJson(text)
+  processInput(text)
 }
 
-// Paste from clipboard
 async function pasteFromClipboard() {
   try {
     const text = await navigator.clipboard.readText()
@@ -86,41 +75,107 @@ async function pasteFromClipboard() {
       showStatus('Clipboard is empty', 'error')
       return
     }
-    processJson(text)
-  } catch (err) {
-    showStatus('Failed to read clipboard. Make sure you have copied JSON data.', 'error')
+    processInput(text)
+  } catch {
+    showStatus('Failed to read clipboard', 'error')
   }
 }
 
-// Process JSON text
-function processJson(text: string) {
-  try {
-    const data = JSON.parse(text) as ClaudeExport
+function processInput(text: string) {
+  const trimmed = text.trim()
 
-    if (!data.chat_messages || !Array.isArray(data.chat_messages)) {
-      showStatus('Invalid Claude export format', 'error')
-      return
+  // Try JSON first (Claude.ai web export)
+  if (trimmed.startsWith('{')) {
+    try {
+      const data = JSON.parse(trimmed) as ClaudeExport
+
+      if (data.chat_messages && Array.isArray(data.chat_messages)) {
+        parsedMessages = parseJsonMessages(data.chat_messages)
+        renderPreview()
+        renderStats(data)
+
+        copyBtn.disabled = false
+        clearBtn.disabled = false
+        showStatus(`Loaded ${parsedMessages.length} messages from JSON`, 'success')
+        return
+      }
+    } catch {
+      // Not valid JSON, try markdown
     }
-
-    parsedMessages = parseMessages(data.chat_messages)
-    renderPreview()
-    renderStats(data)
-
-    copyBtn.disabled = false
-    clearBtn.disabled = false
-    showStatus(`Loaded ${parsedMessages.length} messages`, 'success')
-
-  } catch (err) {
-    showStatus(`Error parsing JSON: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
   }
+
+  // Try Markdown (Claude Code /export)
+  parsedMessages = parseMarkdown(trimmed)
+
+  if (parsedMessages.length === 0) {
+    showStatus('Could not parse input. Paste Claude Code /export output or Claude.ai JSON export.', 'error')
+    return
+  }
+
+  renderPreview()
+  renderStatsFromMessages()
+
+  copyBtn.disabled = false
+  clearBtn.disabled = false
+  showStatus(`Loaded ${parsedMessages.length} messages from markdown`, 'success')
 }
 
-// Parse messages, filtering out tool calls
-function parseMessages(messages: ChatMessage[]): ParsedMessage[] {
+function parseMarkdown(text: string): ParsedMessage[] {
+  const result: ParsedMessage[] = []
+
+  // Claude Code export uses "### Human" and "### Assistant" headers
+  const headerPattern = /^#{2,3}\s+(Human|Assistant|User)\s*$/gim
+  const parts = text.split(headerPattern)
+
+  for (let i = 1; i < parts.length; i += 2) {
+    const role = parts[i]?.toLowerCase()
+    const content = parts[i + 1]?.trim()
+
+    if (!content) continue
+
+    const cleanContent = cleanMarkdownContent(content)
+
+    if (cleanContent) {
+      result.push({
+        sender: (role === 'human' || role === 'user') ? 'human' : 'assistant',
+        text: cleanContent,
+        timestamp: ''
+      })
+    }
+  }
+
+  return result
+}
+
+function cleanMarkdownContent(text: string): string {
+  let cleaned = text
+
+  // Remove function_calls blocks (XML-style tags)
+  cleaned = cleaned.replace(/<function_calls>[\s\S]*?<\/function_calls>/g, '')
+
+  // Remove function_results blocks
+  cleaned = cleaned.replace(/<function_results>[\s\S]*?<\/function_results>/g, '')
+
+  // Remove antml blocks
+  cleaned = cleaned.replace(/<[\s\S]*?<\/antml:[^>]+>/g, '')
+
+  // Remove tool use code blocks
+  cleaned = cleaned.replace(/```tool_use[\s\S]*?```/g, '')
+  cleaned = cleaned.replace(/```tool_result[\s\S]*?```/g, '')
+
+  // Remove system-reminder blocks
+  cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+
+  // Collapse multiple newlines
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+
+  return cleaned.trim()
+}
+
+function parseJsonMessages(messages: ChatMessage[]): ParsedMessage[] {
   const result: ParsedMessage[] = []
 
   for (const msg of messages) {
-    // Extract text content, skip tool_use and tool_result
     const textParts: string[] = []
 
     for (const block of msg.content) {
@@ -129,14 +184,12 @@ function parseMessages(messages: ChatMessage[]): ParsedMessage[] {
       }
     }
 
-    // Also check the top-level text field
     if (msg.text) {
       textParts.push(msg.text)
     }
 
     const text = textParts.join('\n').trim()
 
-    // Only include messages with actual text content
     if (text) {
       result.push({
         sender: msg.sender,
@@ -149,7 +202,6 @@ function parseMessages(messages: ChatMessage[]): ParsedMessage[] {
   return result
 }
 
-// Get display name for sender
 function getSenderName(sender: 'human' | 'assistant'): string {
   if (sender === 'human') {
     return usernameInput.value.trim() || 'User'
@@ -157,7 +209,6 @@ function getSenderName(sender: 'human' | 'assistant'): string {
   return 'Claude'
 }
 
-// Render preview
 function renderPreview() {
   const html = parsedMessages.map(msg => {
     const name = getSenderName(msg.sender)
@@ -169,7 +220,6 @@ function renderPreview() {
   preview.classList.add('visible')
 }
 
-// Render stats
 function renderStats(data: ClaudeExport) {
   const messageCount = parsedMessages.length
   const created = new Date(data.created_at).toLocaleDateString()
@@ -183,7 +233,12 @@ function renderStats(data: ClaudeExport) {
   stats.classList.add('visible')
 }
 
-// Copy as markdown
+function renderStatsFromMessages() {
+  const messageCount = parsedMessages.length
+  stats.innerHTML = `<strong>${messageCount}</strong> messages`
+  stats.classList.add('visible')
+}
+
 async function copyAsMarkdown() {
   const markdown = parsedMessages.map(msg => {
     const name = getSenderName(msg.sender)
@@ -198,7 +253,6 @@ async function copyAsMarkdown() {
   }
 }
 
-// Clear all
 function clearAll() {
   parsedMessages = []
   preview.innerHTML = ''
@@ -211,7 +265,6 @@ function clearAll() {
   hideStatus()
 }
 
-// Status helpers
 function showStatus(message: string, type: 'info' | 'success' | 'error') {
   status.textContent = message
   status.className = `status ${type}`
@@ -222,12 +275,10 @@ function hideStatus() {
   status.textContent = ''
 }
 
-// Escape HTML
 function escapeHtml(text: string): string {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML.replace(/\n/g, '<br>')
 }
 
-// Start
 init()
